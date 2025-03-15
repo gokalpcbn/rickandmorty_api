@@ -1,9 +1,10 @@
 //globals
-let currentData = {};
+let page = 1;
+let totalPages = 6;
 
 //objects
 let data = {
-  getData: function (cb) {
+  getData: function (page = 1, cb) {
     var xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
 
@@ -13,8 +14,21 @@ let data = {
       }
     });
 
-    xhr.open("GET", "http://localhost:5500/data.json");
+    xhr.open("GET", `http://localhost:5500/data${page}.json`);
     xhr.send();
+  },
+
+  getDataAsync: function (page = 1) {
+    return new Promise((resolve, reject) => {
+      try {
+        data.getData(page, function (result) {
+          resolve(result);
+        });
+      } catch (error) {
+        console.log("error", error);
+        reject(error);
+      }
+    });
   },
 };
 
@@ -36,10 +50,31 @@ function fillContainerWithData(dataArray) {
   my_container.innerHTML = container_html;
 }
 
+async function generateMyList(page = 1) {
+  let result = await data.getDataAsync(page);
+  let currentData = JSON.parse(result);
+  fillContainerWithData(currentData);
+  // data.getData(page, function (result) {
+  //   let currentData = JSON.parse(result);
+  //   fillContainerWithData(currentData);
+  // });
+}
+
+async function next() {
+  if (page < totalPages) {
+    page++;
+    await generateMyList(page);
+  }
+}
+
+async function prev() {
+  if (page > 1) {
+    page--;
+    await generateMyList(page);
+  }
+}
+
 //document events
-document.addEventListener("DOMContentLoaded", function () {
-  data.getData(function (result) {
-    let currentData = JSON.parse(result);
-    fillContainerWithData(currentData);
-  });
+document.addEventListener("DOMContentLoaded", async function () {
+  await generateMyList();
 });
